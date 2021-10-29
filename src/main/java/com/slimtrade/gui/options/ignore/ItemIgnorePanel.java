@@ -142,7 +142,6 @@ public class ItemIgnorePanel extends ContainerPanel implements ISaveable {
                 }
             }
         }
-        App.chatParser.setWhisperIgnoreTerms(App.saveManager.settingsSaveFile.ignoreData);
     }
 
     @Override
@@ -155,8 +154,6 @@ public class ItemIgnorePanel extends ContainerPanel implements ISaveable {
                 addRemovePanel.addRemovablePanel(new IgnoreRow(data, addRemovePanel));
             }
         }
-//        addRemovePanel.saveChanges();
-        App.chatParser.setWhisperIgnoreTerms(fullData);
     }
 
 }

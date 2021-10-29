@@ -5,7 +5,7 @@ import com.slimtrade.core.References;
 import com.slimtrade.core.parsing.*;
 import com.slimtrade.enums.LangRegex;
 import com.slimtrade.enums.MessageType;
-import com.slimtrade.gui.FrameManager;
+import com.slimtrade.gui.enums.MatchType;
 import com.slimtrade.gui.options.ignore.IgnoreData;
 import org.apache.commons.io.input.Tailer;
 
@@ -19,26 +19,23 @@ import java.util.regex.Pattern;
 
 public class ChatParser {
 
+    // Callbacks
+    public List<ITradeOfferCallback> tradeOfferPreloadCallbackList = new ArrayList<>();
+    public List<ITradeOfferCallback> tradeOfferCallbackList = new ArrayList<>();
+    public List<IChatScannerCallback> chatScannerCallbackList = new ArrayList<>();
+    public List<IPlayerJoinedAreaCallback> playerJoinedAreaCallbackList = new ArrayList<>();
+    public List<ITradeHistoryCallback> tradeHistoryCallbackList = new ArrayList<>();
+
     private static final Pattern SEARCH_PATTERN = Pattern.compile(References.REGEX_SCANNER_PREFIX + "(?<scannerMessage>.+))");
-    private static final Pattern JOINED_PATTERN = Pattern.compile(".+ : (.+) has joined the area(.)");
     private String[] searchIgnoreTerms;
     private String[] searchTerms;
     private String searchName;
 
     // File Tailing
     private Tailer tailer;
-    public ChatTailerListener chatListener;
-    private ArrayList<IgnoreData> whisperIgnoreData;
+    private ChatTailerListener chatListener;
     private boolean chatScannerRunning;
-
-    boolean initialized;
-
-    // Callbacks
-    public List<ITradeOfferCallback> tradeOfferPreloadCallbackList = new ArrayList<ITradeOfferCallback>();
-    public List<ITradeOfferCallback> tradeOfferCallbackList = new ArrayList<ITradeOfferCallback>();
-    public List<IChatScannerCallback> chatScannerCallbackList = new ArrayList<IChatScannerCallback>();
-    public List<IPlayerJoinedAreaCallback> playerJoinedAreaCallbackList = new ArrayList<IPlayerJoinedAreaCallback>();
-    public List<ITradeHistoryCallback> tradeHistoryCallbackList = new ArrayList<ITradeHistoryCallback>();
+    private boolean initialized;
 
     public void init() {
         initialized = false;
@@ -80,9 +77,10 @@ public class ChatParser {
     }
 
     public void parseLine(String text) {
-        TradeOffer trade = App.chatParser.getTradeOffer(text);
+        TradeOffer trade = getTradeOffer(text);
         // Preload, no UI update
         if (!initialized && trade != null) {
+            if(ignoreItemCheck(trade)) return;
             for (ITradeHistoryCallback callback : tradeHistoryCallbackList) {
                 callback.onNewTrade(trade);
             }
@@ -91,6 +89,7 @@ public class ChatParser {
         if (!initialized) return;
         // Trade Offer
         if (trade != null) {
+            if(ignoreItemCheck(trade)) return;
             SwingUtilities.invokeLater(() -> {
                 for (ITradeOfferCallback callback : tradeOfferCallbackList) {
                     callback.onNewTrade(trade);
@@ -98,10 +97,9 @@ public class ChatParser {
             });
         }
         // Chat Scanner
-        else {
+        else if (chatScannerRunning) {
             TradeOffer searchOffer = App.chatParser.getSearchOffer(text);
             if (searchOffer != null) {
-
                 SwingUtilities.invokeLater(() -> {
                     for (IChatScannerCallback callback : chatScannerCallbackList) {
                         callback.onNewChatScan(searchOffer);
@@ -235,6 +233,20 @@ public class ChatParser {
         return null;
     }
 
+    private boolean ignoreItemCheck(TradeOffer trade) {
+        if (trade.messageType == MessageType.INCOMING_TRADE) {
+            String itemLower = trade.itemName.toLowerCase();
+            for (IgnoreData ignore : App.saveManager.settingsSaveFile.ignoreData) {
+                String ignoreLower = ignore.itemName.toLowerCase();
+                if ((ignore.matchType == MatchType.CONTAINS && itemLower.contains(ignoreLower))
+                        || ignore.matchType == MatchType.EXACT && itemLower.equals(ignoreLower)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private <T> T cleanResult(Matcher matcher, String text) {
         try {
             return (T) matcher.group(text);
@@ -280,10 +292,6 @@ public class ChatParser {
                 break;
         }
         return type;
-    }
-
-    public void setWhisperIgnoreTerms(ArrayList<IgnoreData> ignoreData) {
-        this.whisperIgnoreData = ignoreData;
     }
 
     public void setChatScannerRunning(boolean state) {
