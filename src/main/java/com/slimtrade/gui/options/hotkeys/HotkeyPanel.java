@@ -35,7 +35,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
     JLabel delveLabel = new CustomLabel("Delve");
     JLabel dndLabel = new CustomLabel("Do Not Disturb");
     JLabel exitLabel = new CustomLabel("Exit to Menu");
-    JLabel harvestLabel = new CustomLabel("Harvest");
+    JLabel guildLabel = new CustomLabel("Guild Hideout");
     JLabel hideoutLabel = new CustomLabel("Hideout");
     JLabel leavePartyLabel = new CustomLabel("Leave Party");
     JLabel menagerieLabel = new CustomLabel("Menagerie");
@@ -45,7 +45,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
     HotkeyInputPane delveHotkeyInput = new HotkeyInputPane();
     HotkeyInputPane dndHotkeyInput = new HotkeyInputPane();
     HotkeyInputPane exitHotkeyInput = new HotkeyInputPane();
-    HotkeyInputPane harvestHotkeyInput = new HotkeyInputPane();
+    HotkeyInputPane guildHotkeyInput = new HotkeyInputPane();
     HotkeyInputPane hideoutHotkeyInput = new HotkeyInputPane();
     HotkeyInputPane leavePartyHotkeyInput = new HotkeyInputPane();
     HotkeyInputPane menagerieHotkeyInput = new HotkeyInputPane();
@@ -77,7 +77,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
         LabelComponentPanel delvePanel = new LabelComponentPanel(delveLabel, delveHotkeyInput);
         LabelComponentPanel dndPanel = new LabelComponentPanel(dndLabel, dndHotkeyInput);
         LabelComponentPanel exitPanel = new LabelComponentPanel(exitLabel, exitHotkeyInput);
-        LabelComponentPanel harvestPanel = new LabelComponentPanel(harvestLabel, harvestHotkeyInput);
+        LabelComponentPanel guildPanel = new LabelComponentPanel(guildLabel, guildHotkeyInput);
         LabelComponentPanel hideoutPanel = new LabelComponentPanel(hideoutLabel, hideoutHotkeyInput);
         LabelComponentPanel leavePanel = new LabelComponentPanel(leavePartyLabel, leavePartyHotkeyInput);
         LabelComponentPanel menageriePanel = new LabelComponentPanel(menagerieLabel, menagerieHotkeyInput);
@@ -116,7 +116,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
         gc.gridy++;
         poeInner.add(exitPanel, gc);
         gc.gridy++;
-        poeInner.add(harvestPanel, gc);
+        poeInner.add(guildPanel, gc);
         gc.gridy++;
         poeInner.add(hideoutPanel, gc);
         gc.gridy++;
@@ -165,7 +165,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
         App.saveManager.settingsSaveFile.delveHotkey = delveHotkeyInput.getHotkeyData();
         App.saveManager.settingsSaveFile.dndHotkey = dndHotkeyInput.getHotkeyData();
         App.saveManager.settingsSaveFile.exitHotkey = exitHotkeyInput.getHotkeyData();
-        App.saveManager.settingsSaveFile.harvestHotkey = harvestHotkeyInput.getHotkeyData();
+        App.saveManager.settingsSaveFile.guildHotkey = guildHotkeyInput.getHotkeyData();
         App.saveManager.settingsSaveFile.hideoutHotkey = hideoutHotkeyInput.getHotkeyData();
         App.saveManager.settingsSaveFile.leavePartyHotkey = leavePartyHotkeyInput.getHotkeyData();
         App.saveManager.settingsSaveFile.menagerieHotkey = menagerieHotkeyInput.getHotkeyData();
@@ -186,7 +186,7 @@ public class HotkeyPanel extends ContainerPanel implements ISaveable, IColorable
         delveHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.delveHotkey);
         dndHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.dndHotkey);
         exitHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.exitHotkey);
-        harvestHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.harvestHotkey);
+        guildHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.guildHotkey);
         hideoutHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.hideoutHotkey);
         leavePartyHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.leavePartyHotkey);
         menagerieHotkeyInput.updateHotkey(App.saveManager.settingsSaveFile.menagerieHotkey);
