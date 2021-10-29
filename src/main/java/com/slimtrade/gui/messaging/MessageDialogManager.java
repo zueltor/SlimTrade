@@ -3,6 +3,9 @@ package com.slimtrade.gui.messaging;
 import com.slimtrade.App;
 import com.slimtrade.core.managers.ColorManager;
 import com.slimtrade.core.observing.AdvancedMouseAdapter;
+import com.slimtrade.core.parsing.IChatScannerCallback;
+import com.slimtrade.core.parsing.IPlayerJoinedAreaCallback;
+import com.slimtrade.core.parsing.ITradeOfferCallback;
 import com.slimtrade.core.saving.savefiles.SettingsSaveFile;
 import com.slimtrade.core.utility.TradeOffer;
 import com.slimtrade.core.utility.TradeUtility;
@@ -11,7 +14,9 @@ import com.slimtrade.gui.FrameManager;
 import com.slimtrade.gui.basic.HideableDialog;
 import com.slimtrade.gui.components.PanelWrapper;
 import com.slimtrade.gui.enums.ExpandDirection;
+import com.slimtrade.gui.enums.MatchType;
 import com.slimtrade.gui.enums.WindowState;
+import com.slimtrade.gui.options.ignore.IgnoreData;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MessageDialogManager {
+public class MessageDialogManager implements ITradeOfferCallback, IChatScannerCallback, IPlayerJoinedAreaCallback {
 
     private Point anchorPoint;
     public static final Dimension DEFAULT_SIZE = new Dimension(400, 40);
@@ -60,7 +65,7 @@ public class MessageDialogManager {
     };
 
     public MessageDialogManager() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         int x = App.saveManager.overlaySaveFile.messageX;
         int y = App.saveManager.overlaySaveFile.messageY;
         anchorPoint = new Point(x, y);
@@ -88,7 +93,7 @@ public class MessageDialogManager {
     }
 
     public void addMessage(TradeOffer trade, boolean playSound) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         // Ignore Duplicates
         if (wrapperList.size() >= MAX_MESSAGE_COUNT || isDuplicateTrade(trade)) {
             return;
@@ -173,7 +178,7 @@ public class MessageDialogManager {
     }
 
     private void setOpacity(float opacity) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (PanelWrapper w : wrapperList) {
             w.setOpacity(opacity);
         }
@@ -181,7 +186,7 @@ public class MessageDialogManager {
     }
 
     public void stepOpacity() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         if (faded && opacity > targetOpacity) {
             opacity = TradeUtility.floatWithinRange(opacity - OPACITY_STEP, 0f, 1f);
             setOpacity(opacity);
@@ -193,7 +198,7 @@ public class MessageDialogManager {
 
     // Redraw all panels
     public void refreshPanelLocations() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         Point targetPoint = new Point(anchorPoint);
         int i = 0;
         int shownMessages = 0;
@@ -269,7 +274,7 @@ public class MessageDialogManager {
     }
 
     public void closeTrade(TradeOffer tradeA) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         int i = 0;
         for (PanelWrapper wrapper : wrapperList) {
             MessagePanel msg = wrapper.getPanel();
@@ -284,7 +289,7 @@ public class MessageDialogManager {
     }
 
     public void closeTradesByItem(String itemA) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         int i = 0;
         final ArrayList<Integer> indexesToDelete = new ArrayList<>();
         for (PanelWrapper wrapper : wrapperList) {
@@ -306,7 +311,7 @@ public class MessageDialogManager {
     }
 
     private void closeSimilarTrades(int index) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         MessagePanel msg = wrapperList.get(index).getPanel();
         TradeOffer tradeA = msg.getTrade();
         final ArrayList<Integer> indexesToDelete = new ArrayList<>();
@@ -366,7 +371,7 @@ public class MessageDialogManager {
     }
 
     private void removeMessage(int index) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         MessagePanel msgPanel = wrapperList.get(index).getPanel();
         if (msgPanel.getMessageType() == MessageType.INCOMING_TRADE) {
             if (msgPanel.getStashHelper() != null) {
@@ -382,12 +387,12 @@ public class MessageDialogManager {
     }
 
     public void setAnchorPoint(Point point) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         this.anchorPoint = point;
     }
 
     public void forceAllToTop() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (HideableDialog d : wrapperList) {
             if (d.isVisible()) {
                 d.setAlwaysOnTop(false);
@@ -401,7 +406,7 @@ public class MessageDialogManager {
     }
 
     public void showAll() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (HideableDialog d : wrapperList) {
             if (d.visible) {
                 d.setVisible(true);
@@ -414,7 +419,7 @@ public class MessageDialogManager {
     }
 
     public void hideAll() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (HideableDialog d : wrapperList) {
             d.setVisible(false);
         }
@@ -423,7 +428,7 @@ public class MessageDialogManager {
 
 
     public void setPlayerJoinedArea(String username) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (PanelWrapper wrapper : wrapperList) {
             MessagePanel panel = wrapper.getPanel();
             if (panel.getTrade().playerName.equals(username)) {
@@ -440,7 +445,7 @@ public class MessageDialogManager {
     }
 
     public void updateMessageColors() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (PanelWrapper w : wrapperList) {
             ColorManager.recursiveColor(w);
         }
@@ -448,7 +453,7 @@ public class MessageDialogManager {
     }
 
     public void setMessageIncrease(int sizeIncrease) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         expandPanel.setSize(getTotalMessageSize().width, expandPanel.getHeight());
         messageSize = new Dimension(DEFAULT_SIZE.width + sizeIncrease, DEFAULT_SIZE.height + sizeIncrease);
         int tempMax = 80;
@@ -504,7 +509,7 @@ public class MessageDialogManager {
     }
 
     private void addCloseButtonListener(PanelWrapper wrapper) {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         wrapper.panel.getCloseButton().addMouseListener(new AdvancedMouseAdapter() {
             public void click(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
@@ -523,4 +528,28 @@ public class MessageDialogManager {
         }
     }
 
+    @Override
+    public void onNewTrade(TradeOffer trade) {
+        String itemLower = trade.itemName.toLowerCase();
+        if(trade.messageType == MessageType.INCOMING_TRADE){
+            for(IgnoreData ignore : App.saveManager.settingsSaveFile.ignoreData){
+                String ignoreLower = ignore.itemName.toLowerCase();
+                if((ignore.matchType == MatchType.CONTAINS && itemLower.contains(ignoreLower))
+                    || ignore.matchType== MatchType.EXACT && itemLower.equals(ignoreLower)){
+                    return;
+                }
+            }
+        }
+        addMessage(trade);
+    }
+
+    @Override
+    public void onNewChatScan(TradeOffer trade) {
+        addMessage(trade);
+    }
+
+    @Override
+    public void onPlayerJoinedArea(String username) {
+        setPlayerJoinedArea(username);
+    }
 }

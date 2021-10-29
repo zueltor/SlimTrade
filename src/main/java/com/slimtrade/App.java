@@ -7,7 +7,6 @@ import com.slimtrade.core.observing.GlobalKeyboardListener;
 import com.slimtrade.core.observing.GlobalMouseListener;
 import com.slimtrade.core.update.UpdateManager;
 import com.slimtrade.core.utility.ChatParser;
-import com.slimtrade.core.utility.FileMonitor;
 import com.slimtrade.core.utility.PoeInterface;
 import com.slimtrade.enums.ColorTheme;
 import com.slimtrade.enums.QuickPasteSetting;
@@ -34,7 +33,7 @@ public class App {
     public static Debugger debugger;
     public static Logger logger = Logger.getLogger("slim");
     public static ChatParser chatParser = new ChatParser();
-    public static FileMonitor fileMonitor;
+//    public static FileMonitor fileMonitor;
     // Managers
     public static FontManager fontManager;
     public static AudioManager audioManager;
@@ -229,12 +228,20 @@ public class App {
             FrameManager.setupWindow.setVisible(true);
         } else {
             // Launch
+
             // Reload to get correct client path
             FrameManager.optionsWindow.reloadGeneralPanel();
             FrameManager.windowState = WindowState.NORMAL;
-            fileMonitor = new FileMonitor();
-            fileMonitor.startMonitor();
+
+            // Chat Parser
+            chatParser.tradeOfferPreloadCallbackList.add(FrameManager.historyWindow);
+            chatParser.tradeHistoryCallbackList.add(FrameManager.historyWindow);
+            chatParser.tradeOfferCallbackList.add(FrameManager.messageManager);
+            chatParser.tradeOfferCallbackList.add(FrameManager.historyWindow);
+            chatParser.chatScannerCallbackList.add(FrameManager.messageManager);
+            chatParser.playerJoinedAreaCallbackList.add(FrameManager.messageManager);
             chatParser.init();
+
             if (App.saveManager.settingsSaveFile.enableMenubar) {
                 FrameManager.menubarToggle.setShow(true);
                 if (!globalMouse.isGameFocused() && !PoeInterface.isPoeFocused(false)) {
@@ -265,9 +272,6 @@ public class App {
             GlobalScreen.unregisterNativeHook();
         } catch (NativeHookException e) {
             e.printStackTrace();
-        }
-        if (fileMonitor != null) {
-            fileMonitor.stopMonitor();
         }
         debugger.log("SlimTrade Terminated\n");
         debugger.close();

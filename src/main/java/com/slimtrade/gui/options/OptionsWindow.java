@@ -248,9 +248,7 @@ public class OptionsWindow extends AbstractResizableWindow implements IColorable
             if (reloadHistory) {
                 new Thread(() -> {
                     // Restart file monitor
-                    App.fileMonitor.stopMonitor();
                     App.chatParser.init();
-                    App.fileMonitor.startMonitor();
 
                 }).start();
             }

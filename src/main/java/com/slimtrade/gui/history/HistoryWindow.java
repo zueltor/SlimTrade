@@ -3,6 +3,8 @@ package com.slimtrade.gui.history;
 import com.slimtrade.App;
 import com.slimtrade.core.managers.ColorManager;
 import com.slimtrade.core.observing.IColorable;
+import com.slimtrade.core.parsing.ITradeHistoryCallback;
+import com.slimtrade.core.parsing.ITradeOfferCallback;
 import com.slimtrade.core.utility.TradeOffer;
 import com.slimtrade.enums.DateStyle;
 import com.slimtrade.enums.TimeStyle;
@@ -17,7 +19,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
-public class HistoryWindow extends AbstractResizableWindow implements IColorable {
+public class HistoryWindow extends AbstractResizableWindow implements IColorable, ITradeOfferCallback, ITradeHistoryCallback {
     private static final long serialVersionUID = 1L;
 
     protected static TimeStyle timeStyle;
@@ -37,6 +39,8 @@ public class HistoryWindow extends AbstractResizableWindow implements IColorable
     private JScrollPane incomingScroll;
     private JScrollPane outgoingScroll;
 
+    public boolean updateUI;
+    private boolean initialized;
 
     public HistoryWindow() {
         super("History", true, true);
@@ -134,8 +138,25 @@ public class HistoryWindow extends AbstractResizableWindow implements IColorable
         outgoingPanel.refreshOrder();
     }
 
+    public void addTrade(TradeOffer trade) {
+        if (updateUI) assert (SwingUtilities.isEventDispatchThread());
+        if (App.saveManager.settingsSaveFile.historyLimit == 0) {
+            return;
+        }
+        switch (trade.messageType) {
+            case CHAT_SCANNER:
+                break;
+            case INCOMING_TRADE:
+                incomingPanel.addTrade(trade, updateUI);
+                break;
+            case OUTGOING_TRADE:
+                outgoingPanel.addTrade(trade, updateUI);
+                break;
+        }
+    }
+
     public void addTrade(TradeOffer trade, boolean updateUI) {
-        assert(SwingUtilities.isEventDispatchThread());
+        if (updateUI) assert (SwingUtilities.isEventDispatchThread());
         if (App.saveManager.settingsSaveFile.historyLimit == 0) {
             return;
         }
@@ -152,8 +173,14 @@ public class HistoryWindow extends AbstractResizableWindow implements IColorable
     }
 
     public void clearHistory() {
+        System.out.println("Clear hist");
         incomingPanel.clearTrades();
         outgoingPanel.clearTrades();
+    }
+
+    public void clearPanels() {
+        incomingPanel.clearPanels();
+        outgoingPanel.clearPanels();
     }
 
     public void buildHistory() {
@@ -161,8 +188,9 @@ public class HistoryWindow extends AbstractResizableWindow implements IColorable
         outgoingPanel.initUI();
         incomingPanel.revalidate();
         incomingPanel.repaint();
-        this.revalidate();
-        this.repaint();
+        initialized = true;
+        revalidate();
+        repaint();
     }
 
     @Override
@@ -181,21 +209,18 @@ public class HistoryWindow extends AbstractResizableWindow implements IColorable
         FrameManager.saveWindowPins();
     }
 
-//    @Override
-//    public void save() {
-//        App.saveManager.pinSaveFile.historyPin = getPinElement();
-//        App.saveManager.savePinsToDisk();
-//    }
-//
-//    @Override
-//    public void load() {
-//        App.saveManager.loadPinsFromDisk();
-//        PinElement pin = App.saveManager.pinSaveFile.historyPin;
-//        this.pinned = pin.pinned;
-//        if (this.pinned) {
-//            applyPinElement(pin);
-//        }
-//        updatePullbars();
-//    }
+    @Override
+    public void onNewTrade(TradeOffer tradeOffer) {
+        addTrade(tradeOffer, initialized);
+    }
 
+    @Override
+    public void onHistoryInit() {
+        SwingUtilities.invokeLater(() -> clearHistory());
+    }
+
+    @Override
+    public void onHistoryLoaded() {
+        SwingUtilities.invokeLater(() -> buildHistory());
+    }
 }

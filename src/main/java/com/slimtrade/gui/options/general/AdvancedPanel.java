@@ -56,9 +56,7 @@ public class AdvancedPanel extends ContainerPanel implements ISaveable, IColorab
                 // Save Client Path
                 App.saveManager.settingsSaveFile.clientPath = clientRow.getText();
                 // Restart file monitor
-                App.fileMonitor.stopMonitor();
                 App.chatParser.init();
-                App.fileMonitor.startMonitor();
             }).start();
         }
     }

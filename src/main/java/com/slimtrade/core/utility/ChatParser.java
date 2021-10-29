@@ -2,151 +2,131 @@ package com.slimtrade.core.utility;
 
 import com.slimtrade.App;
 import com.slimtrade.core.References;
+import com.slimtrade.core.parsing.*;
 import com.slimtrade.enums.LangRegex;
 import com.slimtrade.enums.MessageType;
 import com.slimtrade.gui.FrameManager;
-import com.slimtrade.gui.enums.MatchType;
 import com.slimtrade.gui.options.ignore.IgnoreData;
+import org.apache.commons.io.input.Tailer;
 
 import javax.swing.*;
-import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.logging.Level;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ChatParser {
 
-    // Internal
-    private InputStreamReader reader;
-    private BufferedReader bufferedReader;
-    private int curLineCount = 0;
-    private int totalLineCount;
-    private String curLine;
-    private ActionListener updateAction = e -> procUpdate();
-    private Timer updateTimer = new Timer(500, updateAction);
     private static final Pattern SEARCH_PATTERN = Pattern.compile(References.REGEX_SCANNER_PREFIX + "(?<scannerMessage>.+))");
     private static final Pattern JOINED_PATTERN = Pattern.compile(".+ : (.+) has joined the area(.)");
-    private ArrayList<IgnoreData> whisperIgnoreData = new ArrayList<IgnoreData>();
-    private boolean chatScannerRunning = false;
     private String[] searchIgnoreTerms;
     private String[] searchTerms;
     private String searchName;
 
-    // Debugging
-    final int MAX_PRINT = 3;
-    int procCount = 0;
-    int updateCount = 0;
+    // File Tailing
+    private Tailer tailer;
+    public ChatTailerListener chatListener;
+    private ArrayList<IgnoreData> whisperIgnoreData;
+    private boolean chatScannerRunning;
+
+    boolean initialized;
+
+    // Callbacks
+    public List<ITradeOfferCallback> tradeOfferPreloadCallbackList = new ArrayList<ITradeOfferCallback>();
+    public List<ITradeOfferCallback> tradeOfferCallbackList = new ArrayList<ITradeOfferCallback>();
+    public List<IChatScannerCallback> chatScannerCallbackList = new ArrayList<IChatScannerCallback>();
+    public List<IPlayerJoinedAreaCallback> playerJoinedAreaCallbackList = new ArrayList<IPlayerJoinedAreaCallback>();
+    public List<ITradeHistoryCallback> tradeHistoryCallbackList = new ArrayList<ITradeHistoryCallback>();
 
     public void init() {
-        SwingUtilities.invokeLater(() -> FrameManager.historyWindow.clearHistory());
-        int msgCount = 0;
-        updateTimer.stop();
+        initialized = false;
+        if (tailer != null) {
+            tailer.stop();
+        }
+        initHistory();
+        initChatTailer();
+        initialized = true;
+    }
+
+    private void initHistory() {
+
         try {
-            reader = new InputStreamReader(new FileInputStream(App.saveManager.settingsSaveFile.clientPath), StandardCharsets.UTF_8);
-            bufferedReader = new BufferedReader(reader);
-        } catch (FileNotFoundException e) {
+            InputStreamReader stream = new InputStreamReader(new FileInputStream(App.saveManager.settingsSaveFile.clientPath), StandardCharsets.UTF_8);
+            BufferedReader reader = new BufferedReader(stream);
+            while (reader.ready()) {
+                parseLine(reader.readLine());
+            }
+            reader.close();
+            for (ITradeHistoryCallback callback : tradeHistoryCallbackList) {
+                callback.onHistoryLoaded();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initChatTailer() {
+        chatListener = new ChatTailerListener(this);
+        File clientFile = new File(App.saveManager.settingsSaveFile.clientPath);
+        if (clientFile.exists()) {
+            tailer = Tailer.create(clientFile, chatListener, 100, true);
+        } else {
             App.debugger.log("[ERROR] Chat parser failed to launch.");
-            App.logger.log(Level.SEVERE, "Chat parser failed to launch");
             return;
         }
-        totalLineCount = 0;
-        try {
-            while ((curLine = bufferedReader.readLine()) != null) {
-                LangRegex lang;
-                if (curLine.contains("@") && (lang = getLang(curLine)) != null) {
-                    TradeOffer trade = getTradeOffer(curLine, lang);
-                    if (trade != null) {
-                        SwingUtilities.invokeLater(() -> FrameManager.historyWindow.addTrade(trade, false));
-                    }
-                    msgCount++;
-                }
-                totalLineCount++;
+        chatListener.init(tailer);
+    }
+
+    public void parseLine(String text) {
+        TradeOffer trade = App.chatParser.getTradeOffer(text);
+        // Preload, no UI update
+        if (!initialized && trade != null) {
+            for (ITradeHistoryCallback callback : tradeHistoryCallbackList) {
+                callback.onNewTrade(trade);
             }
-            SwingUtilities.invokeLater(() -> FrameManager.historyWindow.buildHistory());
-            App.debugger.log(msgCount + " whisper messages found.");
-        } catch (IOException e) {
-            e.printStackTrace();
+            return;
         }
-        updateTimer.start();
-        App.debugger.log(totalLineCount + " total lines found.");
-        App.debugger.log("Chat parser successfully launched.");
-    }
-
-    private void procUpdate() {
-        try {
-            reader = new InputStreamReader(new FileInputStream(App.saveManager.settingsSaveFile.clientPath), StandardCharsets.UTF_8);
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void update() {
-        try {
-            reader = new InputStreamReader(new FileInputStream(App.saveManager.settingsSaveFile.clientPath), StandardCharsets.UTF_8);
-            bufferedReader = new BufferedReader(reader);
-            curLineCount = 0;
-            while ((curLine = bufferedReader.readLine()) != null) {
-                curLineCount++;
-                if (curLineCount > totalLineCount) {
-                    totalLineCount++;
-                    LangRegex lang;
-
-                    // Trade Message
-                    if (curLine.contains("@") && (lang = getLang(curLine)) != null) {
-                        TradeOffer trade = getTradeOffer(curLine, lang);
-                        if (trade != null) {
-                            if ((App.saveManager.settingsSaveFile.enableIncomingTrades || trade.messageType != MessageType.INCOMING_TRADE)
-                                    && (App.saveManager.settingsSaveFile.enableOutgoingTrades || trade.messageType != MessageType.OUTGOING_TRADE)) {
-                                boolean ignore = false;
-                                if (trade.messageType == MessageType.INCOMING_TRADE) {
-                                    for (IgnoreData data : App.saveManager.settingsSaveFile.ignoreData) {
-                                        if ((data.matchType == MatchType.CONTAINS && trade.itemName.contains(data.itemName))
-                                                || (data.matchType == MatchType.EXACT && trade.itemName.equals(data.itemName))) {
-                                            ignore = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (!ignore) {
-                                    SwingUtilities.invokeLater(() -> {
-                                        FrameManager.messageManager.addMessage(trade);
-                                        FrameManager.historyWindow.addTrade(trade, true);
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    // Chat Scanner
-                    else if (chatScannerRunning) {
-                        TradeOffer trade = getSearchOffer(curLine);
-                        if (trade != null) {
-                            SwingUtilities.invokeLater(() -> FrameManager.messageManager.addMessage(trade));
-                        }
-                    }
-                    // Player Joined Area
-                    for (LangRegex l : LangRegex.values()) {
-                        if (l.JOINED_AREA_PATTERN == null) continue;
-                        Matcher matcher = l.JOINED_AREA_PATTERN.matcher(curLine);
-                        if (matcher.matches()) {
-                            SwingUtilities.invokeLater(() -> FrameManager.messageManager.setPlayerJoinedArea(matcher.group("username")));
-                            break;
-                        }
-                    }
+        if (!initialized) return;
+        // Trade Offer
+        if (trade != null) {
+            SwingUtilities.invokeLater(() -> {
+                for (ITradeOfferCallback callback : tradeOfferCallbackList) {
+                    callback.onNewTrade(trade);
                 }
+            });
+        }
+        // Chat Scanner
+        else {
+            TradeOffer searchOffer = App.chatParser.getSearchOffer(text);
+            if (searchOffer != null) {
+
+                SwingUtilities.invokeLater(() -> {
+                    for (IChatScannerCallback callback : chatScannerCallbackList) {
+                        callback.onNewChatScan(searchOffer);
+                    }
+                });
             }
-            bufferedReader.close();
-            reader.close();
-        } catch (NumberFormatException | IOException e) {
-            App.debugger.log("[Chat Parser] Exception encountered while attempting to update parser.");
+        }
+        // Player Joined Area
+        for (LangRegex l : LangRegex.values()) {
+            if (l.JOINED_AREA_PATTERN == null) continue;
+            Matcher matcher = l.JOINED_AREA_PATTERN.matcher(text);
+            if (matcher.matches()) {
+                SwingUtilities.invokeLater(() -> {
+                    String username = matcher.group("username");
+                    for (IPlayerJoinedAreaCallback callback : playerJoinedAreaCallbackList) {
+                        callback.onPlayerJoinedArea(username);
+                    }
+                });
+                break;
+            }
         }
     }
 
-    public LangRegex getLang(String text) {
-        // Languages only support one contain text so 'wtb is checked separately to support legacy sites
+    public static LangRegex getLang(String text) {
+        // Languages only support one contain text so 'wtb' is checked separately to support legacy sites
         if (text.contains("wtb")) {
             return LangRegex.ENGLISH;
         }
@@ -181,7 +161,10 @@ public class ChatParser {
         return false;
     }
 
-    public TradeOffer getTradeOffer(String text, LangRegex lang) {
+    public TradeOffer getTradeOffer(String text) {
+        if (!text.contains("@")) return null;
+        LangRegex lang = getLang(text);
+        if (getLang(text) == null) return null;
         Matcher matcher = null;
         boolean found = false;
         for (Pattern p : lang.CLIENT_PATTERNS) {
@@ -216,7 +199,8 @@ public class ChatParser {
         return trade;
     }
 
-    private TradeOffer getSearchOffer(String text) {
+    public TradeOffer getSearchOffer(String text) {
+        if (searchTerms == null) return null;
         Matcher matcher = SEARCH_PATTERN.matcher(text);
         if (matcher.matches()) {
             TradeOffer trade = new TradeOffer();
@@ -240,6 +224,7 @@ public class ChatParser {
                 if (!s.equals("")) {
                     if (chatMessage.contains(s)) {
                         found = true;
+                        break;
                     }
                 }
             }

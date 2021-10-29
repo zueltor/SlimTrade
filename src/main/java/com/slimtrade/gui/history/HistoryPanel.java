@@ -14,20 +14,15 @@ import java.util.ArrayList;
 public class HistoryPanel extends JPanel implements IColorable {
 
     private static final long serialVersionUID = 1L;
-    // private TradeOffer savedTrade;
 
     private ArrayList<TradeOffer> trades = new ArrayList<TradeOffer>();
     private ArrayList<HistoryRow> tradePanels = new ArrayList<HistoryRow>();
 
-
     private JPanel contentPanel;
-
-//	private static int maxTrades = 10;
-
     private boolean close = false;
 
     HistoryPanel() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         this.setLayout(new BorderLayout());
         contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -35,7 +30,7 @@ public class HistoryPanel extends JPanel implements IColorable {
     }
 
     public void addTrade(TradeOffer trade, boolean updateUI) {
-        assert(SwingUtilities.isEventDispatchThread());
+        if (updateUI) assert (SwingUtilities.isEventDispatchThread());
         int i = 0;
         // Delete old duplicate
         for (TradeOffer savedTrade : trades) {
@@ -74,7 +69,7 @@ public class HistoryPanel extends JPanel implements IColorable {
     }
 
     public void initUI() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (TradeOffer trade : trades) {
             HistoryRow row = new HistoryRow(trade, close);
             if (HistoryWindow.orderType == OrderType.NEW_FIRST) {
@@ -85,13 +80,12 @@ public class HistoryPanel extends JPanel implements IColorable {
             tradePanels.add(row);
         }
         ColorManager.recursiveColor(this);
-//		App.logger.log(Level.INFO, "HISTORY BUILD TIME : " + Debugger.benchmark());
         this.revalidate();
         this.repaint();
     }
 
     public void refreshOrder() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         if (HistoryWindow.orderType == OrderType.NEW_FIRST) {
             for (HistoryRow row : tradePanels) {
                 contentPanel.add(row, 0);
@@ -105,22 +99,27 @@ public class HistoryPanel extends JPanel implements IColorable {
         this.repaint();
     }
 
+    public void clearPanels() {
+        assert (SwingUtilities.isEventDispatchThread());
+        contentPanel.removeAll();
+    }
+
     public void clearTrades() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         contentPanel.removeAll();
         trades.clear();
         tradePanels.clear();
     }
 
     public void updateDate() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (HistoryRow row : tradePanels) {
             row.updateDate();
         }
     }
 
     public void updateTime() {
-        assert(SwingUtilities.isEventDispatchThread());
+        assert (SwingUtilities.isEventDispatchThread());
         for (HistoryRow row : tradePanels) {
             row.updateTime();
         }
