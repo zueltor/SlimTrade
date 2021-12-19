@@ -256,6 +256,7 @@ public class PoeInterface {
                 cmd = cmd.replaceAll("\\{item\\}", item);
                 cmd = cmd.replaceAll("\\{price\\}", price);
                 cmd = cmd.replaceAll("\\{message\\}", fullMessage);
+                cmd = cmd.replaceAll("\\{zone\\}", App.chatParser.getZone());
                 pasteString = new StringSelection(cmd);
                 int attempt = 1;
                 int MAX_ATTEMPTS = 3;

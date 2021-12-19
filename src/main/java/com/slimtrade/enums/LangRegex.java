@@ -71,17 +71,19 @@ public enum LangRegex {
     public final Pattern[] CLIENT_PATTERNS;
     public final Pattern[] QUICK_PASTE_PATTERNS;
     public final Pattern JOINED_AREA_PATTERN;
+    public final Pattern ZONE_PATTERN;
 
-    LangRegex(String text, Pattern[] clientPatterns, Pattern[] quickPastePatterns) {
-        this.CONTAINS_TEXT = text;
-        this.CLIENT_PATTERNS = clientPatterns;
-        this.QUICK_PASTE_PATTERNS = quickPastePatterns;
-        this.JOINED_AREA_PATTERN = null;
-    }
+//    LangRegex(String text, Pattern[] clientPatterns, Pattern[] quickPastePatterns) {
+//        this.CONTAINS_TEXT = text;
+//        this.CLIENT_PATTERNS = clientPatterns;
+//        this.QUICK_PASTE_PATTERNS = quickPastePatterns;
+//        this.JOINED_AREA_PATTERN = null;
+//    }
 
     LangRegex(String containsText, String joinedArea, String[] phrases) {
         this.CONTAINS_TEXT = containsText;
         this.JOINED_AREA_PATTERN = Pattern.compile(".+ : (?<username>.+) " + joinedArea);
+        this.ZONE_PATTERN = Pattern.compile(".+ : You have entered (?<zone>.+)[.]");
         CLIENT_PATTERNS = new Pattern[phrases.length];
         QUICK_PASTE_PATTERNS = new Pattern[phrases.length];
         for (int i = 0; i < phrases.length; i++) {

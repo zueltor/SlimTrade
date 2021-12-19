@@ -36,6 +36,7 @@ public class ChatParser {
     private ChatTailerListener chatListener;
     private boolean chatScannerRunning;
     private boolean initialized;
+    private String zone = "Hideout";
 
     public void init() {
         initialized = false;
@@ -80,16 +81,40 @@ public class ChatParser {
         TradeOffer trade = getTradeOffer(text);
         // Preload, no UI update
         if (!initialized && trade != null) {
-            if(ignoreItemCheck(trade)) return;
+            if (ignoreItemCheck(trade)) return;
             for (ITradeHistoryCallback callback : tradeHistoryCallbackList) {
                 callback.onNewTrade(trade);
             }
             return;
         }
+        // Player Joined Area + Zone Change
+        for (LangRegex l : LangRegex.values()) {
+            Matcher joinedMatcher = l.JOINED_AREA_PATTERN.matcher(text);
+            Matcher zoneMatcher = l.ZONE_PATTERN.matcher(text);
+            boolean joined = joinedMatcher.matches();
+            boolean zoned = zoneMatcher.matches();
+            if (joined || zoned) {
+                SwingUtilities.invokeLater(() -> {
+                    if (joined) {
+                        String username = joinedMatcher.group("username");
+                        for (IPlayerJoinedAreaCallback callback : playerJoinedAreaCallbackList) {
+                            callback.onPlayerJoinedArea(username);
+                        }
+                    }
+                    if (zoned) {
+                        zone = zoneMatcher.group("zone");
+                    }
+                });
+                break;
+            }
+        }
+        //
+        // END INIT
+        //
         if (!initialized) return;
         // Trade Offer
         if (trade != null) {
-            if(ignoreItemCheck(trade)) return;
+            if (ignoreItemCheck(trade)) return;
             SwingUtilities.invokeLater(() -> {
                 for (ITradeOfferCallback callback : tradeOfferCallbackList) {
                     callback.onNewTrade(trade);
@@ -107,20 +132,10 @@ public class ChatParser {
                 });
             }
         }
-        // Player Joined Area
-        for (LangRegex l : LangRegex.values()) {
-            if (l.JOINED_AREA_PATTERN == null) continue;
-            Matcher matcher = l.JOINED_AREA_PATTERN.matcher(text);
-            if (matcher.matches()) {
-                SwingUtilities.invokeLater(() -> {
-                    String username = matcher.group("username");
-                    for (IPlayerJoinedAreaCallback callback : playerJoinedAreaCallbackList) {
-                        callback.onPlayerJoinedArea(username);
-                    }
-                });
-                break;
-            }
-        }
+    }
+
+    public String getZone() {
+        return zone;
     }
 
     public static LangRegex getLang(String text) {
