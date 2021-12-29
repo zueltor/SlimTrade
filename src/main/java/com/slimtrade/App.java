@@ -176,46 +176,6 @@ public class App {
         //globalMouse = new GlobalMouseListener();
         globalKeyboard = new GlobalKeyboardListener();
 
-        java.util.Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                char[] className = new char[512];
-                char[] title = new char[512];
-                WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
-
-                User32.INSTANCE.GetClassName(hwnd, className, 512);
-                User32.INSTANCE.GetWindowText(hwnd, title, 512);
-
-                if (!Native.toString(className).equals("POEWindowClass")) {
-                    if(show){
-                        show=false;
-                        FrameManager.hideAllFrames();
-                        FrameManager.overlayManager.hideAll();
-                    }
-                } else {
-                    if(!show){
-                        show=true;
-                        switch (FrameManager.windowState) {
-                            case NORMAL:
-                                FrameManager.showVisibleFrames();
-                                FrameManager.forceAllToTop();
-                                break;
-                            case LAYOUT_MANAGER:
-                                FrameManager.overlayManager.showAll();
-                                FrameManager.overlayManager.allToFront();
-                                break;
-                            case STASH_OVERLAY:
-                                FrameManager.stashOverlayWindow.setVisible(true);
-                                FrameManager.stashOverlayWindow.setAlwaysOnTop(false);
-                                FrameManager.stashOverlayWindow.setAlwaysOnTop(true);
-                                break;
-                        }
-                    }
-                }
-            }
-        }, 0, 150);
-
         // Load save files from disk
         saveManager.loadScannerFromDisk();
         saveManager.loadStashFromDisk();
@@ -304,6 +264,64 @@ public class App {
                 updateManager.runDelayedUpdateCheck();
             }
         }
+
+        java.util.Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                char[] className = new char[512];
+                char[] title = new char[512];
+                WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+
+                User32.INSTANCE.GetClassName(hwnd, className, 512);
+                User32.INSTANCE.GetWindowText(hwnd, title, 512);
+
+                if(Native.toString(title).contains("SlimTrade - ")){
+                    System.out.println(Native.toString(title));
+                    switch (FrameManager.windowState) {
+                        case NORMAL:
+                            FrameManager.showVisibleFrames();
+                            FrameManager.forceAllToTop();
+                            break;
+                        case LAYOUT_MANAGER:
+                            FrameManager.overlayManager.showAll();
+                            FrameManager.overlayManager.allToFront();
+                            break;
+                        case STASH_OVERLAY:
+                            FrameManager.stashOverlayWindow.setVisible(true);
+                            FrameManager.stashOverlayWindow.setAlwaysOnTop(false);
+                            FrameManager.stashOverlayWindow.setAlwaysOnTop(true);
+                            break;
+                    }
+                    return;
+                }
+
+                if (!Native.toString(className).equals("POEWindowClass")) {
+                    if(show){
+                        show=false;
+                        FrameManager.hideAllFrames();
+                        FrameManager.overlayManager.hideAll();
+                    }
+                } else {
+                        show=true;
+                        switch (FrameManager.windowState) {
+                            case NORMAL:
+                                FrameManager.showVisibleFrames();
+                                FrameManager.forceAllToTop();
+                                break;
+                            case LAYOUT_MANAGER:
+                                FrameManager.overlayManager.showAll();
+                                FrameManager.overlayManager.allToFront();
+                                break;
+                            case STASH_OVERLAY:
+                                FrameManager.stashOverlayWindow.setVisible(true);
+                                FrameManager.stashOverlayWindow.setAlwaysOnTop(false);
+                                FrameManager.stashOverlayWindow.setAlwaysOnTop(true);
+                                break;
+                        }
+                }
+            }
+        }, 0, 150);
     }
 
     private static void closeProgram() {
