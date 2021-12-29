@@ -105,7 +105,7 @@ public class MessageDialogManager {
         wrapper.visible = true;
 
         // Hide message if game isn't focused
-        if (!App.globalMouse.isGameFocused() || FrameManager.windowState != WindowState.NORMAL) {
+        if (!App.show || FrameManager.windowState != WindowState.NORMAL) {
             wrapper.setVisible(false);
         }
 
@@ -128,7 +128,7 @@ public class MessageDialogManager {
         }
 
         refreshPanelLocations();
-        if (!App.globalMouse.isGameFocused() || FrameManager.windowState != WindowState.NORMAL) {
+        if (!App.show || FrameManager.windowState != WindowState.NORMAL) {
             hideAll();
         } else {
             FrameManager.showVisibleFrames();

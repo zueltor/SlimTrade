@@ -130,7 +130,7 @@
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <configuration>
-                        <outputDirectory>D:\Programming\Java\_EXPORTED JARS</outputDirectory>
+                        <outputDirectory>C:\Games\Macros</outputDirectory>
                         <finalName>SlimTrade</finalName>
                         <appendAssemblyId>false</appendAssemblyId>
                         <archive>

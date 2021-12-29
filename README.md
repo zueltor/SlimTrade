@@ -1,4 +1,6 @@
 # SlimTrade
+``mvn clean compile assembly:single``
+
 An overlay for Path of Exile that creates macro popups for trade messages. Also includes a chat scanner, trade history, item ignore feature, color themes, update checker, and more! POE must be run in 'Windowed Fullscreen' or 'Windowed' mode.<br><br>
 [**Donate with PayPal**](https://www.paypal.me/zmilla93)<br>
 [**Download Latest Version**](https://github.com/zmilla93/SlimTrade/releases/latest)<br>

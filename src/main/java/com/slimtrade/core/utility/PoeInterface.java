@@ -117,7 +117,8 @@ public class PoeInterface {
                 FrameManager.forceAllToTop();
             });
             quickPasteSuccess = true;
-            App.globalMouse.setGameFocusedFlag(true);
+            //todo
+            //App.globalMouse.setGameFocusedFlag(true);
         }).start();
     }
 

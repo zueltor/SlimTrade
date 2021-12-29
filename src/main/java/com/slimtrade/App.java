@@ -17,6 +17,9 @@ import com.slimtrade.gui.enums.WindowState;
 import com.slimtrade.gui.popups.PatchNotesWindow;
 import com.slimtrade.gui.popups.UpdateDialog;
 import com.slimtrade.gui.setup.SetupWindow;
+import com.sun.jna.Native;
+import com.sun.jna.platform.win32.User32;
+import com.sun.jna.platform.win32.WinDef;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 
@@ -26,6 +29,8 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +50,7 @@ public class App {
     public static ClipboardManager clipboardManager;
     // JNativeHook
     public static GlobalKeyboardListener globalKeyboard;
-    public static GlobalMouseListener globalMouse;
+   // public static GlobalMouseListener globalMouse;
     // Launch arguments
     public static boolean update = false;
     public static boolean clean = false;
@@ -57,6 +62,7 @@ public class App {
     public static String updateTargetVersion = null;
     public static String debuggerTimestamp = null;
     public static String launcherPath = null;
+    public static boolean show=false;
     // Loading
     public static LoadingDialog loadingDialog;
 
@@ -167,8 +173,48 @@ public class App {
         logger.setUseParentHandlers(false);
 
         // Hook into mouse and keyboard
-        globalMouse = new GlobalMouseListener();
+        //globalMouse = new GlobalMouseListener();
         globalKeyboard = new GlobalKeyboardListener();
+
+        java.util.Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                char[] className = new char[512];
+                char[] title = new char[512];
+                WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+
+                User32.INSTANCE.GetClassName(hwnd, className, 512);
+                User32.INSTANCE.GetWindowText(hwnd, title, 512);
+
+                if (!Native.toString(className).equals("POEWindowClass")) {
+                    if(show){
+                        show=false;
+                        FrameManager.hideAllFrames();
+                        FrameManager.overlayManager.hideAll();
+                    }
+                } else {
+                    if(!show){
+                        show=true;
+                        switch (FrameManager.windowState) {
+                            case NORMAL:
+                                FrameManager.showVisibleFrames();
+                                FrameManager.forceAllToTop();
+                                break;
+                            case LAYOUT_MANAGER:
+                                FrameManager.overlayManager.showAll();
+                                FrameManager.overlayManager.allToFront();
+                                break;
+                            case STASH_OVERLAY:
+                                FrameManager.stashOverlayWindow.setVisible(true);
+                                FrameManager.stashOverlayWindow.setAlwaysOnTop(false);
+                                FrameManager.stashOverlayWindow.setAlwaysOnTop(true);
+                                break;
+                        }
+                    }
+                }
+            }
+        }, 0, 150);
 
         // Load save files from disk
         saveManager.loadScannerFromDisk();
@@ -209,8 +255,8 @@ public class App {
         audioManager = new AudioManager();
 
         // Finalize
-        GlobalScreen.addNativeMouseListener(globalMouse);
-        GlobalScreen.addNativeMouseMotionListener(globalMouse);
+        //GlobalScreen.addNativeMouseListener(globalMouse);
+        //GlobalScreen.addNativeMouseMotionListener(globalMouse);
         GlobalScreen.addNativeKeyListener(globalKeyboard);
         Runtime.getRuntime().addShutdownHook(new Thread(App::closeProgram));
         SwingUtilities.invokeLater(() -> {
@@ -237,7 +283,7 @@ public class App {
             chatParser.init();
             if (App.saveManager.settingsSaveFile.enableMenubar) {
                 FrameManager.menubarToggle.setShow(true);
-                if (!globalMouse.isGameFocused() && !PoeInterface.isPoeFocused(false)) {
+                if (!show && !PoeInterface.isPoeFocused(false)) {
                     FrameManager.menubarToggle.setVisible(false);
                 }
             }

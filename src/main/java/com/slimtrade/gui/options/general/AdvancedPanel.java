@@ -27,7 +27,7 @@ public class AdvancedPanel extends ContainerPanel implements ISaveable, IColorab
         this.container.add(clientRow, gc);
 
         clientRow.getEditButton().addActionListener(e -> {
-            App.globalMouse.setIgnoreUntilNextFocusClick(true);
+            //App.globalMouse.setIgnoreUntilNextFocusClick(true);
             int action = clientRow.getFileChooser().showOpenDialog(clientRow);
             if (action == JFileChooser.APPROVE_OPTION) {
                 File clientFile = clientRow.getFileChooser().getSelectedFile();
